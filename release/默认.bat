@@ -1,3 +1,3 @@
 @echo off
-java -jar "%~dp0/chromapack.jar" "%*"
+java -jar "%~dp0/chromapack.jar" %*
 pause

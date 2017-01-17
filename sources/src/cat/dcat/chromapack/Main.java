@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.util.Stack;
 
 public class Main {
     static class float2 {
@@ -198,7 +199,7 @@ public class Main {
         out.println("            Just a Hello World ");
         out.println("-----------------------------------------");
         out.println("By DCat 2017/01/12");
-        String source=null;
+        Stack<String> sources=new Stack<>();
         boolean hasAlpha=false;
         boolean isGray=false;
         for(int x=0;x<args.length;x++){
@@ -210,26 +211,28 @@ public class Main {
                     hasAlpha=true;
                     break;
                 default:
-                    source=args[x];
+                    sources.push(args[x]);
             }
         }
-        if(source==null){
+        if(sources.size()==0){
             usage();
             System.exit(1);
         }
-        BufferedImage image = ImageIO.read(new File(source));
-        BufferedImage outImage;
         out.println("-----------------------------------------");
-        out.println("[*]Decoding "+source);
         out.println("[*]HasAlpha:"+hasAlpha+"    isGray:"+isGray);
-        if(hasAlpha)
-            outImage = decodeUnitImage(image,isGray);
-        else
-            outImage = decodeBackground(image,isGray);
-        String outFile=source+"_decoded.png";
-        out.println("[*]Done.");
-        ImageIO.write(outImage, "PNG", new File(outFile));
-        out.println("[*]PNG Saved to "+outFile);
+        for(String source:sources) {
+            out.println("[*]Decoding " + source);
+            BufferedImage image = ImageIO.read(new File(source));
+            BufferedImage outImage;
+            if (hasAlpha)
+                outImage = decodeUnitImage(image, isGray);
+            else
+                outImage = decodeBackground(image, isGray);
+            String outFile = source + "_decoded.png";
+            out.println("[*]Done.");
+            ImageIO.write(outImage, "PNG", new File(outFile));
+            out.println("[*]PNG Saved to " + outFile);
+        }
         out.println("-----------------------------------------");
     }
 
