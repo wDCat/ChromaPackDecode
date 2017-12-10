@@ -1,4 +1,6 @@
-/**Created By DCat 2017/01/11*/
+/**
+ * Created By DCat 2017/01/11
+ */
 package cat.dcat.chromapack;
 
 
@@ -52,14 +54,14 @@ public class Main {
                     '}';
         }
 
-        public int toColor(double alpha) {
+        public int toColor(float alpha) {
             if (v1 > 1.0f) v1 = 1.0f;
             if (v2 > 1.0f) v2 = 1.0f;
             if (v3 > 1.0f) v3 = 1.0f;
             if (v1 < 0.0f) v1 = 0.0f;
             if (v2 < 0.0f) v2 = 0.0f;
             if (v3 < 0.0f) v3 = 0.0f;
-            return new Color((float) v1, (float) v2, (float) v3, (float) alpha).getRGB();
+            return new Color((float) v1, (float) v2, (float) v3, alpha).getRGB();
         }
     }
 
@@ -91,8 +93,8 @@ public class Main {
         );
     }
 
-    private static float getAlpha(int rgba,boolean isGray) {
-        if(isGray)return getAlphaByGray(rgba);
+    private static float getAlpha(int rgba, boolean isGray) {
+        if (isGray) return getAlphaByGray(rgba);
         return (rgba >> 24 & 0xFF) / 255f;
     }
 
@@ -100,10 +102,10 @@ public class Main {
         return (rgba & 0xFF) / 255f;
     }
 
-    private static BufferedImage decodeBackground(BufferedImage image,boolean isGray) {
+    private static BufferedImage decodeBackground(BufferedImage image, boolean isGray, boolean removeBolder) {
         int tw = image.getWidth();
         int th = image.getHeight();
-        BufferedImage out = new BufferedImage(tw, th, BufferedImage.TYPE_INT_RGB);
+        BufferedImage out = new BufferedImage(tw, th, BufferedImage.TYPE_4BYTE_ABGR);
         System.out.println("size(x,y):(" + tw + "   " + th);
 
         float2 timg = new float2(tw, th);
@@ -122,11 +124,19 @@ public class Main {
                     float2 y_pos = pos.mul(new float2(2.0f / 3.0f, 1.0f)).add(timg.mul(new float2(1.0f / 3.0f, 0.0f)));
                     float2 cb_pos = pos.mul(new float2(1.0f / 3.0f, 0.5f));
                     float2 cr_pos = pos.mul(new float2(1.0f / 3.0f, 0.5f)).add(timg.mul(new float2(0f, 0.5f)));
-                    double y_ = getAlpha(image.getRGB(new Float(y_pos.v1).intValue(), new Float(y_pos.v2).intValue()),isGray);
-                    double cb_ = getAlpha(image.getRGB(new Float(cb_pos.v1).intValue(), new Float(cb_pos.v2).intValue()),isGray) - 0.5f;
-                    double cr_ = getAlpha(image.getRGB(new Float(cr_pos.v1).intValue(), new Float(cr_pos.v2).intValue()),isGray) - 0.5f;
+                    double y_ = getAlpha(image.getRGB(new Float(y_pos.v1).intValue(), new Float(y_pos.v2).intValue()), isGray);
+
+                    double cb_ = getAlpha(image.getRGB(new Float(cb_pos.v1).intValue(), new Float(cb_pos.v2).intValue()), isGray) - 0.5f;
+                    double cr_ = getAlpha(image.getRGB(new Float(cr_pos.v1).intValue(), new Float(cr_pos.v2).intValue()), isGray) - 0.5f;
                     double3 color = YCbCrtoRGB(y_, cb_, cr_);
-                    out.setRGB(x, y, color.toColor(1));
+                    float alpha_ = 1f;
+                    if (removeBolder) {
+                        if ((x < tw * 0.15 || x > tw * 0.85) || (y < th * 0.15 || y > th * 0.85)) {
+                            if (y_ == 0.0f) alpha_ = 0.0f;
+                            else if (y_ < 0.02f) alpha_ = 0.01f;
+                        }
+                    }
+                    out.setRGB(x, y, color.toColor(alpha_));
                 } catch (Exception e) {
                     e.printStackTrace(System.err);
                     break;
@@ -137,10 +147,10 @@ public class Main {
         return out;
     }
 
-    private static BufferedImage decodeUnitImage(BufferedImage image,boolean isGray) {
+    private static BufferedImage decodeUnitImage(BufferedImage image, boolean isGray) {
         int tw = image.getWidth();
         int th = image.getHeight();
-        BufferedImage out = new BufferedImage(tw, th, BufferedImage.TYPE_INT_RGB);
+        BufferedImage out = new BufferedImage(tw, th, BufferedImage.TYPE_4BYTE_ABGR);
         System.out.println("size(x,y):(" + tw + "   " + th);
 
         float2 timg = new float2(tw, th);
@@ -161,12 +171,12 @@ public class Main {
                     float2 cb_pos = pos.mul(new float2(1.0f / 4.0f, 0.5f));
                     float2 cr_pos = pos.mul(new float2(1.0f / 4.0f, 0.5f)).add(timg.mul(new float2(0f, 0.5f)));
                     float2 alpha_pos = pos.mul(new float2(1.0f / 4.0f, 1.0f)).add(timg.mul(new float2(3.0f / 4.0f, 0.0f)));
-                    double y_ = getAlpha(image.getRGB(new Float(y_pos.v1).intValue(), new Float(y_pos.v2).intValue()),isGray);
-                    double cb_ = getAlpha(image.getRGB(new Float(cb_pos.v1).intValue(), new Float(cb_pos.v2).intValue()),isGray) - 0.5f;
-                    double cr_ = getAlpha(image.getRGB(new Float(cr_pos.v1).intValue(), new Float(cr_pos.v2).intValue()),isGray) - 0.5f;
-                    double alpha_ = getAlpha(image.getRGB(new Float(alpha_pos.v1).intValue(), new Float(alpha_pos.v2).intValue()),isGray);
+                    double y_ = getAlpha(image.getRGB(new Float(y_pos.v1).intValue(), new Float(y_pos.v2).intValue()), isGray);
+                    double cb_ = getAlpha(image.getRGB(new Float(cb_pos.v1).intValue(), new Float(cb_pos.v2).intValue()), isGray) - 0.5f;
+                    double cr_ = getAlpha(image.getRGB(new Float(cr_pos.v1).intValue(), new Float(cr_pos.v2).intValue()), isGray) - 0.5f;
+                    double alpha_ = getAlpha(image.getRGB(new Float(alpha_pos.v1).intValue(), new Float(alpha_pos.v2).intValue()), isGray);
                     double3 color = YCbCrtoRGB(y_, cb_, cr_);
-                    out.setRGB(x, y, color.toColor(alpha_));
+                    out.setRGB(x, y, color.toColor((float) alpha_));
                     /*
                     if (y_ - 1.0f / 256f < 0) {
                         double3 color = YCbCrtoRGB(y_, cb_, cr_);
@@ -189,45 +199,52 @@ public class Main {
         out = zoomImage(out, new Float(image.getWidth() * (2f / 4f)).intValue(), image.getHeight());
         return out;
     }
-    private static void usage(){
+
+    private static void usage() {
         System.err.println("Usage:");
         System.err.println("//TODO:");
     }
+
     public static void main(String[] args) throws IOException {
-        PrintStream out=System.out;
+        PrintStream out = System.out;
         out.println("-----------------------------------------");
         out.println("            Just a Hello World ");
         out.println("-----------------------------------------");
         out.println("By DCat 2017/01/12");
-        Stack<String> sources=new Stack<>();
-        boolean hasAlpha=false;
-        boolean isGray=false;
-        for(int x=0;x<args.length;x++){
-            switch(args[x]){
+        out.println("2017/12/09 Updated");
+        Stack<String> sources = new Stack<>();
+        boolean hasAlpha = false;
+        boolean isGray = false;
+        boolean removeBolder = false;
+        for (int x = 0; x < args.length; x++) {
+            switch (args[x]) {
                 case "-g":
-                    isGray=true;
+                    isGray = true;
                     break;
                 case "-a":
-                    hasAlpha=true;
+                    hasAlpha = true;
+                    break;
+                case "-r":
+                    removeBolder = true;
                     break;
                 default:
                     sources.push(args[x]);
             }
         }
-        if(sources.size()==0){
+        if (sources.size() == 0) {
             usage();
             System.exit(1);
         }
         out.println("-----------------------------------------");
-        out.println("[*]HasAlpha:"+hasAlpha+"    isGray:"+isGray);
-        for(String source:sources) {
+        out.println("[*]HasAlpha:" + hasAlpha + "    isGray:" + isGray);
+        for (String source : sources) {
             out.println("[*]Decoding " + source);
             BufferedImage image = ImageIO.read(new File(source));
             BufferedImage outImage;
             if (hasAlpha)
                 outImage = decodeUnitImage(image, isGray);
             else
-                outImage = decodeBackground(image, isGray);
+                outImage = decodeBackground(image, isGray, removeBolder);
             String outFile = source + "_decoded.png";
             out.println("[*]Done.");
             ImageIO.write(outImage, "PNG", new File(outFile));
